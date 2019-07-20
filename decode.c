@@ -3,13 +3,18 @@
 	(C) 2019 Taddy Snow fotonix@pm.me
 */
 
+#include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <stdint.h>
 #include <sys/types.h>
+
 #include <linux/types.h>
 
 #define ECRYPTFS_SIG_SIZE 8
@@ -73,6 +78,49 @@ struct ecryptfs_auth_tok {
 struct ecryptfs_auth_tok tok;
 
 
+
+int read_token(char *fname, void *data, int len)
+{
+	int f, ret;
+	unsigned char *data_p = data;
+	
+	f = open(fname, O_RDONLY);
+	if (f < 0) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+
+	ret = read(f, data_p, len);
+	if (ret != len) {
+		printf("%s\n", strerror(errno));
+		return (-2);
+	}
+	
+	close(f);
+	
+	printf("Read %d (ret=%d)\n", len, ret);
+}
+
+int save_key(char *signature, void *data, int len)
+{
+	int f;
+	char *fname;
+	
+	asprintf(&fname, "%s.key", signature);
+	printf("Save key to file [%s] %d bytes\n", fname, len);
+	
+	f = open(fname, O_CREAT | O_WRONLY, 0666);
+	if (f < 0) {
+		printf("%s\n", strerror(errno));
+	}
+	write(f, data, len);
+	if (f < 0) {
+		printf("%s\n", strerror(errno));
+	}
+	close(f);
+	free(fname);
+}
+
 ph(char *txt, void *buf, int len, char *txtend)
 {
 	int i;
@@ -88,18 +136,14 @@ ph(char *txt, void *buf, int len, char *txtend)
 
 int main(int argc, char **argv)
 {
-	int f, ret, size = sizeof(tok);
+	int f, size = sizeof(tok);
 
 	if (argc < 2) {
 		printf("Input file name missing\n");
 		return 1;
 	}
 	
-	f = open(argv[1], O_RDONLY);
-	ret = read(f, &tok, size);
-	close(f);
-	
-	printf("Read %d (ret=%d)\n", size, ret);
+	read_token(argv[1], &tok, size);
 	
 	printf("VERSION: %04X\n", tok.version);
 	printf("TTYPE  : %s\n", (tok.token_type == ECRYPTFS_PASSWORD)?"PASSWORD":"PRIVATE_KEY");
@@ -116,6 +160,8 @@ int main(int argc, char **argv)
 	ph("SIGNATURE  : ", &tok.token.password.signature, ECRYPTFS_PASSWORD_SIG_SIZE, " -- ");
 	printf("[%s]\n", tok.token.password.signature);
 	ph("SALT       : ", &tok.token.password.salt, ECRYPTFS_SALT_SIZE, "\n");
+	
+	save_key(tok.token.password.signature, &tok.token.password.session_key_encryption_key, tok.token.password.session_key_encryption_key_bytes);
 	
 	return 0;
 }
