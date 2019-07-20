@@ -1,3 +1,8 @@
+/*
+	eCryptFS Token Decoder tool
+	(C) 2019 Taddy Snow fotonix@pm.me
+*/
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
