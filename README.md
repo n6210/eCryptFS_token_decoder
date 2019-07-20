@@ -1,1 +1,1 @@
-# eCryptFS_token_decoder
+# eCryptFS token decoder
