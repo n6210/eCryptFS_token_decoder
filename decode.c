@@ -90,7 +90,12 @@ int main(int argc, char **argv)
 {
 	int f, ret, size = sizeof(tok);
 
-	f = open("aaa.key", O_RDONLY);
+	if (argc < 2) {
+		printf("Input file name missing\n");
+		return 1;
+	}
+	
+	f = open(argv[1], O_RDONLY);
 	ret = read(f, &tok, size);
 	close(f);
 	
