@@ -103,25 +103,33 @@ int read_token(char *fname, void *data, int len)
 
 int save_key(char *signature, void *data, int len)
 {
-	int f;
+	int f, ret;
 	char *fname;
 	
-	asprintf(&fname, "%s.key", signature);
+	ret = asprintf(&fname, "%s.key", signature);
+	if (ret < 0) {
+		printf("No memory to alloc file name for key\n");
+		return ret;
+	}
 	printf("Save key to file [%s] %d bytes\n", fname, len);
 	
 	f = open(fname, O_CREAT | O_WRONLY, 0666);
 	if (f < 0) {
 		printf("%s\n", strerror(errno));
+		return ret;
 	}
-	write(f, data, len);
-	if (f < 0) {
+	ret = write(f, data, len);
+	if (ret < 0) {
 		printf("%s\n", strerror(errno));
+		return ret;
 	}
-	close(f);
+	ret = close(f);
 	free(fname);
+
+	return ret;
 }
 
-ph(char *txt, void *buf, int len, char *txtend)
+void ph(char *txt, void *buf, int len, char *txtend)
 {
 	int i;
 	unsigned char *p = buf;
